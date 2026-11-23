@@ -2320,4 +2320,21 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get taskReminderPermissionNeeded =>
       'Task saved; notification permission is needed for its reminder.';
+
+  @override
+  String get taskReminderMayBeDelayed =>
+      'Påminnelsen har sparats. Android kan fördröja den eftersom åtkomst till exakta alarm är avstängd.';
+
+  @override
+  String get examReminderSuggestion =>
+      'Would you like a reminder to follow up on this?';
+
+  @override
+  String get examReminderAction => 'Set reminder';
+
+  @override
+  String get examReminderTaskTitle => 'Review exam notes';
+
+  @override
+  String get examReminderNotification => 'Ready to go over your exam notes?';
 }

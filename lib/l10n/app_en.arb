@@ -1070,7 +1070,8 @@
   "taskInputHint": "What needs doing?",
   "taskReminderAdd": "Add reminder",
   "taskReminderPermissionNeeded": "Task saved; notification permission is needed for its reminder.",
-  "examReminderSuggestion": "Looks like you have an exam coming up. Want a reminder to review?",
+  "taskReminderMayBeDelayed": "Reminder saved. Android may delay it because exact alarm access is off.",
+  "examReminderSuggestion": "Would you like a reminder to follow up on this?",
   "examReminderAction": "Set reminder",
   "examReminderTaskTitle": "Review exam notes",
   "examReminderNotification": "Ready to go over your exam notes?"

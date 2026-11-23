@@ -4199,6 +4199,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Task saved; notification permission is needed for its reminder.'**
   String get taskReminderPermissionNeeded;
+
+  /// No description provided for @taskReminderMayBeDelayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder saved. Android may delay it because exact alarm access is off.'**
+  String get taskReminderMayBeDelayed;
+
+  /// No description provided for @examReminderSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Would you like a reminder to follow up on this?'**
+  String get examReminderSuggestion;
+
+  /// No description provided for @examReminderAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Set reminder'**
+  String get examReminderAction;
+
+  /// No description provided for @examReminderTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review exam notes'**
+  String get examReminderTaskTitle;
+
+  /// No description provided for @examReminderNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to go over your exam notes?'**
+  String get examReminderNotification;
 }
 
 class _AppLocalizationsDelegate
