@@ -1526,6 +1526,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get restorePurchases => '구매 복원';
 
   @override
+  String get restoringPurchases => 'Checking purchases…';
+
+  @override
+  String get restorePurchasesSignInRequired =>
+      'Sign in to Cortex before restoring purchases.';
+
+  @override
+  String get restorePurchasesNoResults =>
+      'No previous purchases were found for this store account.';
+
+  @override
   String annualTotalDescription(Object price) {
     return '$price/년, 연간 청구';
   }
@@ -1639,6 +1650,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get listening => '듣는 중';
+
+  @override
+  String get voiceConnecting => 'Connecting to microphone';
+
+  @override
+  String get voiceSpeaking => 'Speaking';
+
+  @override
+  String get voiceUnavailable => 'Microphone unavailable';
 
   @override
   String get defaultViewTitle => '요즘 어때요?';

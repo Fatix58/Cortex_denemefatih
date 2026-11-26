@@ -51,6 +51,10 @@ class FundsBackend with ChangeNotifier {
 
   bool _isLoading = true;
   bool _isPurchasePending = false;
+  bool _isRestoringPurchases = false;
+  bool _restoreAttemptSawPurchase = false;
+  int _restoreAttempt = 0;
+  Timer? _restoreResultTimer;
   final TransactionGuard _verificationGuard = TransactionGuard();
   String? _errorMessage;
   List<ProductDetails> _products = [];
@@ -67,6 +71,8 @@ class FundsBackend with ChangeNotifier {
 
   bool get isPurchasePending =>
       _isPurchasePending || _verificationGuard.isBusy;
+
+  bool get isRestoringPurchases => _isRestoringPurchases;
 
   String? get errorMessage => _errorMessage;
 
@@ -427,6 +433,11 @@ class FundsBackend with ChangeNotifier {
     _notify();
   }
 
+  void _setRestoringPurchases(bool value) {
+    _isRestoringPurchases = value;
+    _notify();
+  }
+
   void _setError(String message) {
     _errorMessage = message;
     _isLoading = false;
@@ -436,6 +447,8 @@ class FundsBackend with ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _restoreAttempt++;
+    _restoreResultTimer?.cancel();
     _purchaseStreamSubscription?.cancel();
     _userProvider?.removeListener(_onUserDataChanged);
     _authSubscription?.cancel();

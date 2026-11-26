@@ -997,15 +997,32 @@ class _FundsScreenViewState extends State<FundsScreenView> {
                             HapticFeedback.lightImpact();
                             await backend.restorePurchases();
                           },
-                    child: Text(
-                      localizations.restorePurchases,
-                      style: TextStyle(
-                        color: AppColors.primaryColor.inverted,
-                        fontSize: screenWidth * 0.035,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: backend.isRestoringPurchases
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.primaryColor.inverted,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(localizations.restoringPurchases),
+                            ],
+                          )
+                        : Text(
+                            localizations.restorePurchases,
+                            style: TextStyle(
+                              color: AppColors.primaryColor.inverted,
+                              fontSize: screenWidth * 0.035,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                     ),
-                  ),
+
                   SizedBox(height: screenHeight * 0.002),
                   TextButton(
                     onPressed: () {

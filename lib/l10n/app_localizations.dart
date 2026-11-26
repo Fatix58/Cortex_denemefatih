@@ -2922,6 +2922,24 @@ abstract class AppLocalizations {
   /// **'Restore Purchases'**
   String get restorePurchases;
 
+  /// No description provided for @restoringPurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking purchases…'**
+  String get restoringPurchases;
+
+  /// No description provided for @restorePurchasesSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Cortex before restoring purchases.'**
+  String get restorePurchasesSignInRequired;
+
+  /// No description provided for @restorePurchasesNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No previous purchases were found for this store account.'**
+  String get restorePurchasesNoResults;
+
   /// No description provided for @annualTotalDescription.
   ///
   /// In en, this message translates to:
@@ -3125,6 +3143,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Listening'**
   String get listening;
+
+  /// No description provided for @voiceConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to microphone'**
+  String get voiceConnecting;
+
+  /// No description provided for @voiceSpeaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaking'**
+  String get voiceSpeaking;
+
+  /// No description provided for @voiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone unavailable'**
+  String get voiceUnavailable;
 
   /// No description provided for @defaultViewTitle.
   ///

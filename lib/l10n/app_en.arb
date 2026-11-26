@@ -614,6 +614,9 @@
   "guest": "Guest",
   "betterWithAnAccount": "This section is better with an account!",
   "restorePurchases": "Restore Purchases",
+  "restoringPurchases": "Checking purchases…",
+  "restorePurchasesSignInRequired": "Sign in to Cortex before restoring purchases.",
+  "restorePurchasesNoResults": "No previous purchases were found for this store account.",
   "annualTotalDescription": "{price}/year, billed annually",
   "@annualTotalDescription": {
     "placeholders": {
@@ -666,6 +669,9 @@
   "actionGallery": "Gallery",
   "actionFile": "File",
   "listening": "Listening",
+  "voiceConnecting": "Connecting to microphone",
+  "voiceSpeaking": "Speaking",
+  "voiceUnavailable": "Microphone unavailable",
   "defaultViewTitle": "What's Up?",
   "defaultViewDescription": "Cortex is always by your side with hundreds of AI models, offline capabilities, dynamic chat, and much more.",
   "speakTheMessage": "Speak The Message",

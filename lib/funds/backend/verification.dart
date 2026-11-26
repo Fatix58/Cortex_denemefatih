@@ -22,7 +22,14 @@ extension FundsVerification on FundsBackend {
       await _crashlytics.recordError(e, stack,
           reason: 'Purchase processing failed', fatal: false);
     } finally {
-      if (!_disposed) _notify();
+      if (!_disposed) {
+        if (_isRestoringPurchases &&
+            (purchaseDetails.status == PurchaseStatus.purchased ||
+                purchaseDetails.status == PurchaseStatus.restored)) {
+          _setRestoringPurchases(false);
+        }
+        _notify();
+      }
     }
   }
 

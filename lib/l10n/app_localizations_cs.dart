@@ -1563,6 +1563,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get restorePurchases => 'Obnovit nákupy';
 
   @override
+  String get restoringPurchases => 'Checking purchases…';
+
+  @override
+  String get restorePurchasesSignInRequired =>
+      'Sign in to Cortex before restoring purchases.';
+
+  @override
+  String get restorePurchasesNoResults =>
+      'No previous purchases were found for this store account.';
+
+  @override
   String annualTotalDescription(Object price) {
     return '$price/rok, účtováno ročně';
   }
@@ -1679,6 +1690,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get listening => 'Poslouchám';
+
+  @override
+  String get voiceConnecting => 'Connecting to microphone';
+
+  @override
+  String get voiceSpeaking => 'Speaking';
+
+  @override
+  String get voiceUnavailable => 'Microphone unavailable';
 
   @override
   String get defaultViewTitle => 'co se děje?';

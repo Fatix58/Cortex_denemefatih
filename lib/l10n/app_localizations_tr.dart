@@ -1560,6 +1560,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get restorePurchases => 'Satın Alımları Geri Yükle';
 
   @override
+  String get restoringPurchases => 'Satın alımlar kontrol ediliyor…';
+
+  @override
+  String get restorePurchasesSignInRequired =>
+      'Satın alımları geri yüklemek için önce Cortex hesabınıza giriş yapın.';
+
+  @override
+  String get restorePurchasesNoResults =>
+      'Bu mağaza hesabında geri yüklenecek bir satın alım bulunamadı.';
+
+  @override
   String annualTotalDescription(Object price) {
     return '$price/yıl, yıllık faturalandırılır';
   }
@@ -1677,6 +1688,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get listening => 'Dinliyor';
+
+  @override
+  String get voiceConnecting => 'Mikrofona bağlanıyor';
+
+  @override
+  String get voiceSpeaking => 'Konuşuyor';
+
+  @override
+  String get voiceUnavailable => 'Mikrofon kullanılamıyor';
 
   @override
   String get defaultViewTitle => 'Ne haber?';

@@ -207,20 +207,62 @@ extension FundsPurchase on FundsBackend {
 
   Future<void> restorePurchases() async {
     if (isPurchasePending) return;
+
+    if (kIsWeb) {
+      log('Restore blocked: store billing is unavailable on web.',
+          name: FundsBackend._logName);
+      _notificationService?.showNotification(
+        message: _localizations?.purchaseStreamError ?? 'purchaseStreamError',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    if (_auth.currentUser == null) {
+      _notificationService?.showNotification(
+        message: _localizations?.restorePurchasesSignInRequired ??
+            'restorePurchasesSignInRequired',
+        type: NotificationType.error,
+        oneLine: false,
+      );
+      return;
+    }
+
     _setPurchasePending(true);
+    _setRestoringPurchases(true);
+    final attempt = ++_restoreAttempt;
+    _restoreAttemptSawPurchase = false;
+    _restoreResultTimer?.cancel();
 
     try {
       log('Restoring purchases...', name: FundsBackend._logName);
+      if (!await _inAppPurchase.isAvailable()) {
+        throw StateError('Store billing is unavailable');
+      }
       await _inAppPurchase.restorePurchases();
-
-      Future.delayed(const Duration(seconds: 4), () {
-        if (isPurchasePending) {
-          log('Restore timeout. Resetting UI.', name: FundsBackend._logName);
-          _setPurchasePending(false);
-        }
+      if (_disposed || attempt != _restoreAttempt || _restoreAttemptSawPurchase) {
+        return;
+      }
+      _restoreResultTimer = Timer(const Duration(seconds: 12), () {
+        if (_disposed || attempt != _restoreAttempt) return;
+        _restoreResultTimer = null;
+        _setRestoringPurchases(false);
+        _setPurchasePending(false);
+        log('Restore completed with no store transactions.',
+            name: FundsBackend._logName);
+        _notificationService?.showNotification(
+          message: _localizations?.restorePurchasesNoResults ??
+              'restorePurchasesNoResults',
+          type: NotificationType.neutral,
+          oneLine: false,
+        );
       });
     } catch (e) {
       log('Restore failed: $e', name: FundsBackend._logName, error: e);
+      _restoreResultTimer?.cancel();
+      _restoreResultTimer = null;
+      _restoreAttempt++;
+      _setRestoringPurchases(false);
       _notificationService?.showNotification(
         message: _localizations?.anErrorOccurred ?? 'anErrorOccurred',
         type: NotificationType.error,
@@ -230,6 +272,19 @@ extension FundsPurchase on FundsBackend {
   }
 
   void _onPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
+    if (_isRestoringPurchases &&
+        purchaseDetailsList.any(
+          (purchase) => purchase.status != PurchaseStatus.pending,
+        )) {
+      final hasRestoredTransaction = purchaseDetailsList.any((purchase) =>
+          purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored);
+      _restoreAttemptSawPurchase = true;
+      _restoreResultTimer?.cancel();
+      _restoreResultTimer = null;
+      if (!hasRestoredTransaction) _setRestoringPurchases(false);
+    }
+
     for (final purchaseDetails in purchaseDetailsList) {
       switch (purchaseDetails.status) {
         case PurchaseStatus.pending:
