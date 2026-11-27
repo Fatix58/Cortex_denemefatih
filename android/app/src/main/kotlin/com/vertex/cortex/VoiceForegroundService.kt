@@ -39,15 +39,29 @@ class VoiceForegroundService : Service() {
         }
 
         val notification = buildNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceCompat.startForeground(
-                this,
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceCompat.startForeground(
+                    this,
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (error: SecurityException) {
+            // A denied/revoked microphone permission must end this service
+            // cleanly rather than crashing the whole Cortex process.
+            android.util.Log.e("CortexVoiceService", "Cannot start microphone foreground service", error)
+            stopSelf(startId)
+            return START_NOT_STICKY
+        } catch (error: IllegalStateException) {
+            // Android can reject foreground-service startup when the app is no
+            // longer in an eligible state. Do not let it crash the app.
+            android.util.Log.e("CortexVoiceService", "Foreground service start rejected", error)
+            stopSelf(startId)
+            return START_NOT_STICKY
         }
         return START_NOT_STICKY
     }

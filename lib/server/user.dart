@@ -108,7 +108,11 @@ class UserProvider with ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  bool get isLoggedIn => _safeCurrentUser != null && _userData != null;
+  // Authentication comes from Firebase Auth. Firestore profile provisioning
+  // can lag behind sign-in, so a missing users/{uid} snapshot must not make a
+  // real account look like a Guest. Profile readiness is tracked separately.
+  bool get isLoggedIn =>
+      _safeCurrentUser != null && !_safeCurrentUser!.isAnonymous;
 
   bool get isUserStateReady {
     final user = _safeCurrentUser;

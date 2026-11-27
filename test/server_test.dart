@@ -22,13 +22,13 @@ class _FakeFirebaseAuth implements FirebaseAuth {
 }
 
 class _FakeFirebaseUser implements User {
-  _FakeFirebaseUser({this.displayName});
+  _FakeFirebaseUser({this.displayName, this.isAnonymous = false});
 
   @override
   String get uid => 'test-uid';
 
   @override
-  bool get isAnonymous => false;
+  final bool isAnonymous;
 
   @override
   final String? displayName;
@@ -179,6 +179,24 @@ void main() {
       expect(userProvider.profileInitial, '?');
       expect(userProvider.subscription.isActive, false);
       expect(userProvider.subscription.effectiveTier, SubscriptionTier.free);
+    });
+
+    test('a Firebase account is logged in before its Firestore profile loads', () {
+      final account = _FakeFirebaseUser();
+      final provider = UserProvider(auth: _FakeFirebaseAuth(account));
+      addTearDown(provider.dispose);
+
+      expect(provider.isLoggedIn, isTrue);
+      expect(provider.isUserStateReady, isFalse);
+      expect(provider.username, 'fatih');
+    });
+
+    test('anonymous Firebase sessions are not treated as logged in', () {
+      final account = _FakeFirebaseUser(isAnonymous: true);
+      final provider = UserProvider(auth: _FakeFirebaseAuth(account));
+      addTearDown(provider.dispose);
+
+      expect(provider.isLoggedIn, isFalse);
     });
 
     test('Anonymous User Logic', () {

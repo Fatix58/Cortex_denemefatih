@@ -6,10 +6,12 @@ import 'package:cortex/chat/providers/input.dart';
 import 'package:cortex/chat/providers/session.dart';
 import 'package:cortex/server/user.dart';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:cortex/chat/services/speech.dart';
 import 'package:cortex/chat/services/stt_remote.dart';
@@ -752,6 +754,30 @@ class VoiceService extends ChangeNotifier with WidgetsBindingObserver {
     // 1. LIMIT & CREDIT CHECK (Before starting)
     // -------------------------------------------------------------------------
     if (context != null && !_checkLimits(context)) return;
+
+    // Android 14+ requires RECORD_AUDIO to be granted before a microphone
+    // foreground service is started. Request it before the native bridge calls
+    // startForegroundService; otherwise a fresh install can be killed by a
+    // SecurityException as soon as Voice is tapped.
+    if (context != null &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        final microphone = await Permission.microphone.request();
+        if (!microphone.isGranted) {
+          lastEndReason = VoiceEndReason.error;
+          _updateState(VoiceState.failed);
+          notifyListeners();
+          return;
+        }
+      } catch (error) {
+        debugPrint('[VoiceService] Microphone permission request failed: $error');
+        lastEndReason = VoiceEndReason.error;
+        _updateState(VoiceState.failed);
+        notifyListeners();
+        return;
+      }
+    }
 
     _lastContext = context;
     _currentLocale = locale;
