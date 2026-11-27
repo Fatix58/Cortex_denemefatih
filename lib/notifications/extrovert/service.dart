@@ -226,6 +226,35 @@ class ExtrovertNotificationService {
     return allowed;
   }
 
+  /// Checks existing OS permissions without displaying a prompt. Used to
+  /// restore reminders that were saved before notification/alarm access was
+  /// granted, while the user is already on the task screen.
+  Future<bool> canScheduleTaskReminderSilently() async {
+    if (!_isInitialized) await initialize();
+    if (Platform.isAndroid) {
+      final android = _localNotifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final notificationsEnabled =
+          await android?.areNotificationsEnabled() ?? false;
+      final exactAlarmsEnabled =
+          await android?.canScheduleExactNotifications() ?? false;
+      _canScheduleExactTaskReminders = exactAlarmsEnabled;
+      return notificationsEnabled && exactAlarmsEnabled;
+    }
+    if (Platform.isIOS) {
+      final permissions = await _localNotifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.checkPermissions();
+      return permissions?.isEnabled == true ||
+          permissions?.isProvisionalEnabled == true;
+    }
+    return false;
+  }
+
   Future<void> scheduleTaskReminder({
     required int notificationId,
     required String title,

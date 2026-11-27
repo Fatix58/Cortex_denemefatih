@@ -769,6 +769,17 @@ class VoiceService extends ChangeNotifier with WidgetsBindingObserver {
           notifyListeners();
           return;
         }
+        final notifications = await Permission.notification.request();
+        if (!notifications.isGranted) {
+          // Android can keep a foreground service running without showing its
+          // ongoing notification in the drawer when this permission is off.
+          // Do not present Voice as ready when its promised background status
+          // cannot be shown to the user.
+          lastEndReason = VoiceEndReason.error;
+          _updateState(VoiceState.failed);
+          notifyListeners();
+          return;
+        }
       } catch (error) {
         debugPrint(
           '[VoiceService] Microphone permission request failed: $error',
@@ -838,8 +849,16 @@ class VoiceService extends ChangeNotifier with WidgetsBindingObserver {
     final teardown = _sessionTeardown;
     if (teardown != null) await teardown;
     if (gen != _activeGeneration) return;
-    await _backgroundService.start();
+    final backgroundStarted = await _backgroundService.start();
     if (gen != _activeGeneration) return;
+    if (context != null &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android &&
+        !backgroundStarted) {
+      debugPrint('[VoiceService] Android foreground voice service failed.');
+      await _endSession(gen, VoiceEndReason.error);
+      return;
+    }
     if (context != null && !context.mounted) {
       await stopSession();
       return;

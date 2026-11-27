@@ -428,6 +428,7 @@ class RemoteSttService {
   // transcript that arrived. A session the user simply ends leaves no other
   // trace, so "it did nothing" and "it worked" looked identical from here.
   int _chunksSent = 0;
+  int _chunksForwarded = 0;
   int _transcriptsSeen = 0;
 
   /// Whether PCM has been forwarded to the CURRENT socket yet. Startup
@@ -1724,6 +1725,7 @@ class RemoteSttService {
         'mic=${isMicLive ? 'live' : 'down'} recorder=${_recorderState ?? 'unknown'} '
         'lastFrame=${ago(_lastMicFrameAt)} lastForwarded=${ago(_lastAudioSentAt)} '
         'lastTranscript=${ago(_lastTranscriptAt)} frames=$_chunksSent '
+        'forwarded=$_chunksForwarded '
         'pendingBuffer=${_pending.length} pcmPeak=$peakPct%';
   }
 
@@ -2087,20 +2089,38 @@ class RemoteSttService {
 
           final socket = _socket;
           if (socket != null && socket.readyState == WebSocket.open) {
-            if (_pending.isNotEmpty) {
-              for (final held in _pending) {
-                _sendPcmChunk(socket, held);
+            var forwarded = true;
+            while (_pending.isNotEmpty) {
+              if (!_sendPcmChunk(
+                socket,
+                _pending.first,
+                epoch: epoch,
+                onClosed: onClosed,
+              )) {
+                forwarded = false;
+                break;
+              } else {
+                _pending.removeAt(0);
               }
-              _pending.clear();
             }
-            _sendPcmChunk(socket, chunk);
-            if (!_pcmForwarded) {
-              _pcmForwarded = true;
-              VoiceTelemetry.mark('first PCM forwarded to socket');
+            if (forwarded) {
+              forwarded = _sendPcmChunk(
+                socket,
+                chunk,
+                epoch: epoch,
+                onClosed: onClosed,
+              );
             }
-            // Active streaming: mark the line as flowing so the keep-alive
-            // tick stays suppressed while audio frames move.
-            _lastAudioSentAt = DateTime.now();
+            if (forwarded) {
+              if (!_pcmForwarded) {
+                _pcmForwarded = true;
+                VoiceTelemetry.mark('first PCM forwarded to socket');
+              }
+              // Only call this flowing after the socket accepted the frame.
+              _lastAudioSentAt = DateTime.now();
+            } else if (_pending.length < _maxPendingChunks) {
+              _pending.add(chunk);
+            }
           } else if (_pending.length < _maxPendingChunks) {
             _pending.add(chunk);
           }
@@ -2152,17 +2172,40 @@ class RemoteSttService {
     return false;
   }
 
-  void _sendPcmChunk(WebSocket socket, Uint8List chunk) {
-    if (_provider == 'elevenlabs') {
-      socket.add(
-        jsonEncode({
-          'message_type': 'input_audio_chunk',
-          'audio_base_64': base64Encode(chunk),
-          'commit': false,
-        }),
+  bool _sendPcmChunk(
+    WebSocket socket,
+    Uint8List chunk, {
+    required int epoch,
+    void Function(SttCloseInfo info)? onClosed,
+  }) {
+    try {
+      if (socket.readyState != WebSocket.open) return false;
+      if (_provider == 'elevenlabs') {
+        socket.add(
+          jsonEncode({
+            'message_type': 'input_audio_chunk',
+            'audio_base_64': base64Encode(chunk),
+            'commit': false,
+          }),
+        );
+      } else {
+        socket.add(chunk);
+      }
+      _chunksForwarded++;
+      return true;
+    } catch (error) {
+      _fail('AUDIO_FORWARD_FAILED', error);
+      unawaited(_report());
+      _handleUnexpectedSocketDeath(
+        epoch,
+        SttCloseInfo(
+          provider: _provider ?? 'deepgram',
+          closeClass: SttCloseClass.reconnect,
+        ),
+        onClosed,
       );
-    } else {
-      socket.add(chunk);
+      unawaited(socket.close());
+      return false;
     }
   }
 
@@ -2192,6 +2235,7 @@ class RemoteSttService {
       unawaited(_report());
     }
     _chunksSent = 0;
+    _chunksForwarded = 0;
     _transcriptsSeen = 0;
 
     _closing = true;

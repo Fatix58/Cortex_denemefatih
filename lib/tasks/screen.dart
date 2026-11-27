@@ -29,7 +29,51 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Future<void> _load() async {
-    final tasks = await _service.load();
+    final notifications = context.read<ExtrovertNotificationService>();
+    var tasks = await _service.load();
+    try {
+      if (await notifications.canScheduleTaskReminderSilently()) {
+        final now = DateTime.now();
+        var changed = false;
+        final repaired = <CortexTask>[];
+        for (final task in tasks) {
+          final dueAt = task.dueAt;
+          if (!task.isDone &&
+              task.notificationId == null &&
+              dueAt != null &&
+              dueAt.isAfter(now)) {
+            final id = DateTime.now().microsecondsSinceEpoch & 0x7fffffff;
+            try {
+              await notifications.scheduleTaskReminder(
+                notificationId: id,
+                title: task.title,
+                scheduledAt: dueAt,
+              );
+              repaired.add(
+                CortexTask(
+                  id: task.id,
+                  title: task.title,
+                  dueAt: dueAt,
+                  notificationId: id,
+                  isDone: task.isDone,
+                ),
+              );
+              changed = true;
+              continue;
+            } catch (_) {
+              // Keep the saved task even if the OS refuses this reminder.
+            }
+          }
+          repaired.add(task);
+        }
+        if (changed) {
+          tasks = repaired;
+          await _service.save(tasks);
+        }
+      }
+    } catch (_) {
+      // Reminder repair is best-effort; displaying saved tasks must not fail.
+    }
     if (!mounted) return;
     setState(() {
       _tasks = tasks;
