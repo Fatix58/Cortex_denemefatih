@@ -860,24 +860,9 @@ class VoiceService extends ChangeNotifier with WidgetsBindingObserver {
       return false;
     }
 
-    // Daily realtime voice allowance. The client mirrors what the server
-    // published (`creditLimits.voiceDailySeconds` + `voiceUsage`); the server
-    // re-checks the pool at every token mint, so this is a UX early-out, not
-    // a security boundary.
-    try {
-      final user = context.read<UserProvider>();
-      final allowance = user.creditLimits.voiceDailySeconds ?? 0;
-      final usage = user.voiceUsage;
-      if (allowance > 0 && usage.remainingToday(allowance) <= 0) {
-        debugPrint("[VoiceService] Daily voice allowance exhausted.");
-        lastEndReason = VoiceEndReason.limit;
-        _updateState(VoiceState.failed);
-        notifyListeners();
-        return false;
-      }
-    } catch (_) {
-      // UserProvider unavailable (tests) — the server still enforces at mint.
-    }
+    // Do not reject from a cached Firestore allowance here. Tier caps can
+    // change before an existing profile/cache is refreshed; the token-mint
+    // response is authoritative and reports the current server allowance.
 
     // Credits: generation-time charging stays authoritative in the send
     // pipeline (sendMessage charges the LLM turn exactly once); speech-layer

@@ -241,40 +241,28 @@ void main() {
     },
   );
 
-  test(
-    'authoritative allowance respects live reservations and daily renewal',
-    () {
-      tz.initializeTimeZones();
-      final user = _VoiceUser(
-        60,
-        VoiceUsage(day: VoiceUsage.todayIstanbulKey(), consumedSeconds: 60),
-      );
-      final stopped = _OverlayVoice(VoiceState.idle, activeSession: false);
-      expect(voiceAllowanceExhausted(stopped, user), isTrue);
-      expect(
-        voiceAllowanceExhausted(_OverlayVoice(VoiceState.listening), user),
-        isFalse,
-      );
-      expect(
-        voiceAllowanceExhausted(stopped, _VoiceUser(null, const VoiceUsage())),
-        isFalse,
-      );
-      expect(
-        voiceAllowanceExhausted(
-          stopped,
-          _VoiceUser(
-            60,
-            const VoiceUsage(day: '2000-01-01', consumedSeconds: 60),
-          ),
-        ),
-        isFalse,
-      );
-      expect(
-        voiceAllowanceExhausted(stopped, _VoiceUser(0, const VoiceUsage())),
-        isTrue,
-      );
-    },
-  );
+  test('stale cached usage does not block a server allowance check', () {
+    tz.initializeTimeZones();
+    final staleUser = _VoiceUser(
+      60,
+      VoiceUsage(day: VoiceUsage.todayIstanbulKey(), consumedSeconds: 60),
+    );
+    final stopped = _OverlayVoice(VoiceState.idle, activeSession: false);
+    expect(voiceAllowanceExhausted(stopped), isFalse);
+    expect(
+      voiceAllowanceExhausted(_OverlayVoice(VoiceState.listening)),
+      isFalse,
+    );
+    expect(
+      voiceAllowanceExhausted(
+        _OverlayVoice(VoiceState.failed, exhausted: true),
+      ),
+      isTrue,
+    );
+    // Keep the fake profile in the test to document that its stale 60 second
+    // snapshot does not decide whether the server grants a new session.
+    expect(staleUser.voiceUsage.consumedSeconds, 60);
+  });
 
   testWidgets('exhausted orb glides purple and opens Plus without retrying', (
     tester,

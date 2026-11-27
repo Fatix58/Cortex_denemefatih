@@ -65,15 +65,9 @@ const Color voicePastelLavender = Color(0xFFC9B6F2);
 const Color voicePastelPowderBlue = Color(0xFFAEC8F5);
 const Color voicePastelBlushPink = Color(0xFFF3C3D9);
 
-/// The server's terminal response wins. A healthy reserved window may keep
-/// running even when the user snapshot shows no unreserved seconds left.
-bool voiceAllowanceExhausted(VoiceService voice, UserProvider? user) {
-  final allowance = user?.creditLimits.voiceDailySeconds;
-  return voice.voiceLimitReached ||
-      (!voice.isSessionActive &&
-          allowance != null &&
-          user!.voiceUsage.remainingToday(allowance) <= 0);
-}
+/// Only a server refusal marks the daily pool exhausted. Cached user data can
+/// lag behind a newly deployed tier limit, so it must not block a fresh mint.
+bool voiceAllowanceExhausted(VoiceService voice) => voice.voiceLimitReached;
 
 /// The plan the exhausted-allowance sheet pre-selects for this tier —
 /// always the NEXT one up: Free → Plus, Plus → Pro, Pro → Ultra. Ultra has
@@ -244,7 +238,7 @@ class _VoiceSessionOverlayState extends State<VoiceSessionOverlay>
     HapticFeedback.lightImpact();
     final voice = context.read<VoiceService>();
     final user = context.read<UserProvider?>();
-    if (voiceAllowanceExhausted(voice, user)) {
+    if (voiceAllowanceExhausted(voice)) {
       // Tier-correct routing: Free → Plus, Plus → Pro, Pro → Ultra. An
       // Ultra user is already at the top — openVoiceUpgrade no-ops and the
       // tap stays on the exhausted orb instead of re-selling their own
@@ -369,7 +363,7 @@ class _VoiceSessionOverlayState extends State<VoiceSessionOverlay>
       );
     }
 
-    if (voiceAllowanceExhausted(voiceService, context.read<UserProvider?>())) {
+    if (voiceAllowanceExhausted(voiceService)) {
       _orb.setPalette(
         primary: const Color(0xFFAB7BE3),
         secondary: const Color(0xFFC3A0ED),

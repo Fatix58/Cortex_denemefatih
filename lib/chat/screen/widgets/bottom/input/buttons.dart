@@ -487,10 +487,7 @@ class ActionButtonWidget extends StatelessWidget {
               final session = context.read<ChatSessionProvider>();
               final inputProvider = context.read<InputProvider>();
               inputProvider.setVoiceModeActive(true);
-              if (voiceAllowanceExhausted(
-                voiceService,
-                context.read<UserProvider?>(),
-              )) {
+              if (voiceAllowanceExhausted(voiceService)) {
                 return;
               }
               VoiceInteractionSounds.enteringVoice();
@@ -727,7 +724,7 @@ class _AddPhotoButtonState extends State<AddPhotoButton> {
           ? () async {
               HapticFeedback.lightImpact();
               final user = context.read<UserProvider?>();
-              if (!flowOn && voiceAllowanceExhausted(voiceService, user)) {
+              if (!flowOn && voiceAllowanceExhausted(voiceService)) {
                 // Tier-correct routing (Free → Plus, Plus → Pro, Pro →
                 // Ultra; Ultra opens nothing — see voice.dart).
                 openVoiceUpgrade(
