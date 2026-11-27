@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:cortex/chat/providers/conversation.dart';
 import 'package:cortex/chat/providers/input.dart';
 import 'package:cortex/chat/providers/session.dart';
-import 'package:cortex/server/user.dart';
 
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
@@ -771,7 +770,9 @@ class VoiceService extends ChangeNotifier with WidgetsBindingObserver {
           return;
         }
       } catch (error) {
-        debugPrint('[VoiceService] Microphone permission request failed: $error');
+        debugPrint(
+          '[VoiceService] Microphone permission request failed: $error',
+        );
         lastEndReason = VoiceEndReason.error;
         _updateState(VoiceState.failed);
         notifyListeners();
@@ -1111,7 +1112,9 @@ class VoiceService extends ChangeNotifier with WidgetsBindingObserver {
     // the buffer never contains words of previously committed turns.
     final String textToSend = _turns.commit();
     VoiceTelemetry.mark('STT final received');
-    VoiceTelemetry.mark('STT final → chat request: "$textToSend"');
+    VoiceTelemetry.mark(
+      'STT final → chat request (${textToSend.length} chars)',
+    );
 
     // User speech is visible (breaks the flow loop temporarily; the user can
     // always intervene).

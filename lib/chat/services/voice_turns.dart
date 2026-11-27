@@ -140,7 +140,10 @@ class VoiceTurnTracker {
           : cur.committed
           ? 'committed'
           : '${cur.id}';
-      _log('DROP stale fragment for turn $turnId (active=$active) raw="$raw"');
+      _log(
+        'DROP stale fragment for turn $turnId (active=$active, '
+        '${raw.length} chars)',
+      );
       return;
     }
     if (raw.trim().isEmpty) return;
@@ -149,8 +152,8 @@ class VoiceTurnTracker {
 
     cur.text = cleaned;
     _log(
-      'turn $turnId ingest raw="$raw" echoCleaned="${_echo != null && cleaned != raw ? cleaned : '-'}" '
-      'buffer="${cur.text}"',
+      'turn $turnId ingest ${raw.length} chars; '
+      '${cleaned.length} chars retained',
     );
   }
 
@@ -168,8 +171,8 @@ class VoiceTurnTracker {
     cur.committed = true;
     _committedText = text;
     _committedAt = _clock();
-    _log('turn ${cur.id}: COMMIT text="$text"');
-    _turnLog('turn ${cur.id} committed: "$text"');
+    _log('turn ${cur.id}: COMMIT ${text.length} chars');
+    _turnLog('turn ${cur.id} committed (${text.length} chars)');
     return text;
   }
 
