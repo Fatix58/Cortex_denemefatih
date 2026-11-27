@@ -91,6 +91,7 @@ dependencies:
   webview_flutter: ^4.13.0
   flutter_local_notifications: ^19.4.2
   home_widget: ^0.10.0
+  sqflite_common_ffi_web: ^1.2.2
   play_install_referrer: ^0.5.0
   battery_plus: ^7.0.0
 

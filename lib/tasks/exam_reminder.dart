@@ -5,16 +5,22 @@ import 'package:cortex/tasks/task.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// Offers a reminder only when a user explicitly mentions an upcoming exam.
+/// Offers a reminder when a message mentions a concrete future commitment.
 class ExamReminderSuggestion {
   ExamReminderSuggestion._();
 
-  static final RegExp _examIntent = RegExp(
-    r'\b(sınav|sinav|exam|test)\b',
+  static final RegExp _futureCommitment = RegExp(
+    r'(\b(yarın|yarin|bugün|bugun|haftaya|gelecek hafta|sonra|daha sonra|'
+    r'toplantı|toplanti|randevu|teslim tarihi|son tarih|sunum|mülakat|'
+    r'mulakat|seyahat|uçuş|ucus|başvuru|basvuru|görüşme|gorusme|'
+    r'sınav|sinav|hatırlat|hatirlat|unutma)\b|'
+    r'\b(tomorrow|today|next week|later|meeting|appointment|deadline|'
+    r'presentation|interview|trip|flight|application|follow up|remind me|'
+    r'exam|test)\b)',
     caseSensitive: false,
   );
 
-  static bool matches(String message) => _examIntent.hasMatch(message);
+  static bool matches(String message) => _futureCommitment.hasMatch(message);
 
   static void offer(BuildContext context, String message) {
     if (!context.mounted || !matches(message)) return;
@@ -26,13 +32,13 @@ class ExamReminderSuggestion {
           content: Text(l10n.examReminderSuggestion),
           action: SnackBarAction(
             label: l10n.examReminderAction,
-            onPressed: () => _chooseTime(context),
+            onPressed: () => _chooseTime(context, message),
           ),
         ),
       );
   }
 
-  static Future<void> _chooseTime(BuildContext context) async {
+  static Future<void> _chooseTime(BuildContext context, String message) async {
     if (!context.mounted) return;
     final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
@@ -57,7 +63,7 @@ class ExamReminderSuggestion {
     );
     if (!reminder.isAfter(DateTime.now())) return;
 
-    final title = l10n.examReminderTaskTitle;
+    final title = _taskTitle(message);
     final notifications = context.read<ExtrovertNotificationService>();
     int? notificationId;
     var reminderMayBeDelayed = false;
@@ -66,7 +72,7 @@ class ExamReminderSuggestion {
         notificationId = DateTime.now().microsecondsSinceEpoch & 0x7fffffff;
         await notifications.scheduleTaskReminder(
           notificationId: notificationId,
-          title: l10n.examReminderNotification,
+          title: title,
           scheduledAt: reminder,
         );
         reminderMayBeDelayed = !await notifications
@@ -96,5 +102,11 @@ class ExamReminderSuggestion {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.taskReminderMayBeDelayed)));
     }
+  }
+
+  static String _taskTitle(String message) {
+    final compact = message.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (compact.length <= 100) return compact;
+    return '${compact.substring(0, 97).trimRight()}…';
   }
 }

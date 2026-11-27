@@ -194,7 +194,7 @@ class ExtrovertNotificationService {
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
-    if (Platform.isAndroid && android == true) {
+    if (Platform.isAndroid) {
       var canScheduleExactly =
           await androidNotifications?.canScheduleExactNotifications() ?? false;
       if (!canScheduleExactly) {
@@ -204,6 +204,7 @@ class ExtrovertNotificationService {
             false;
       }
       _canScheduleExactTaskReminders = canScheduleExactly;
+      return (android ?? false) && canScheduleExactly;
     }
     return ios ?? macos ?? android ?? true;
   }
@@ -231,6 +232,18 @@ class ExtrovertNotificationService {
     required DateTime scheduledAt,
   }) async {
     if (!_isInitialized) await initialize();
+    final canScheduleExactly =
+        await _localNotifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.canScheduleExactNotifications() ??
+        false;
+    if (Platform.isAndroid && !canScheduleExactly) {
+      _canScheduleExactTaskReminders = false;
+      throw StateError('Exact alarm access is required for task reminders.');
+    }
+    if (Platform.isAndroid) _canScheduleExactTaskReminders = true;
     final scheduled = timezone.TZDateTime.from(scheduledAt, timezone.local);
     await _localNotifications.zonedSchedule(
       notificationId,
@@ -252,14 +265,7 @@ class ExtrovertNotificationService {
         ),
       ),
       payload: jsonEncode({'screen': 'tasks'}),
-      androidScheduleMode:
-          Platform.isAndroid &&
-              (await _localNotifications
-                      .resolvePlatformSpecificImplementation<
-                        AndroidFlutterLocalNotificationsPlugin
-                      >()
-                      ?.canScheduleExactNotifications() ??
-                  false)
+      androidScheduleMode: Platform.isAndroid
           ? AndroidScheduleMode.exactAllowWhileIdle
           : AndroidScheduleMode.inexactAllowWhileIdle,
     );
