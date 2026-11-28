@@ -1474,7 +1474,11 @@ class SendService {
           // resumes the answer it gave to it). The partial answer itself is
           // appended manually below — it is marked `isThinking` for the UI and
           // therefore excluded from the provider history.
-          includeLastUser: !isContinue,
+          // New and regenerated user turns are appended explicitly below,
+          // together with their serialized attachments. Continuations instead
+          // keep the original user turn in history and append only the resume
+          // instruction, so its existing media is not sent twice.
+          includeLastUser: isContinue,
           targetModelId: modelId,
           langCode: langCode,
           isCharacterModel: isCharacterModel,
