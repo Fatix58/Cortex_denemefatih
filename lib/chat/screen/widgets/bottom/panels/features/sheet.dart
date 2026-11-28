@@ -381,7 +381,9 @@ class _FeaturesSheetContentState extends State<_FeaturesSheetContent> {
                       // published image cost (or the band is not full);
                       // re-evaluated on every sheet rebuild (UserProvider
                       // watch) — the tap-gate below stays as a safety net.
-                      isDisabled: !creditsManager.canGenerate('image'),
+                      // Taps route low balances to Funds below instead of
+                      // leaving a disabled, non-responsive row.
+                      isDisabled: false,
                       onTap: () {
                         Navigator.pop(context);
                         // Band gate + per-operation affordability gate: the
@@ -409,7 +411,7 @@ class _FeaturesSheetContentState extends State<_FeaturesSheetContent> {
                       title: l10n.featureCreateMusicTitle,
                       description: l10n.featureCreateMusicDescription,
                       isSelected: currentMode == ChatInputMode.musicGeneration,
-                      isDisabled: !creditsManager.canGenerate('speech'),
+                      isDisabled: false,
                       onTap: () {
                         Navigator.pop(context);
                         if (!mediaAvailable || !creditsManager.canGenerate('speech')) {
@@ -431,7 +433,7 @@ class _FeaturesSheetContentState extends State<_FeaturesSheetContent> {
                       // Disabled while the balance cannot cover the
                       // published speech cost — the client's audio
                       // generation maps to the server's 'speech' lane.
-                      isDisabled: !creditsManager.canGenerate('speech'),
+                      isDisabled: false,
                       onTap: () {
                         Navigator.pop(context);
                         // Same band gate, plus the per-operation
@@ -472,8 +474,8 @@ class _FeaturesSheetContentState extends State<_FeaturesSheetContent> {
                           // unaffordable balance gets the disabled
                           // affordance instead of arming a request the
                           // server will refuse.
-                          isDisabled:
-                              isUltra && !creditsManager.canGenerate('video'),
+                          // The tap handler routes low balances to Funds.
+                          isDisabled: false,
                           onTap: () {
                             Navigator.pop(context);
                             // Same band gate, plus the per-operation

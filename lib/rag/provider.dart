@@ -81,6 +81,9 @@ class RagProvider extends ChangeNotifier {
       );
       await loadDocuments();
       return doc;
+    } catch (e, stack) {
+      debugPrint('[RagProvider] document indexing failed: $e\n$stack');
+      return null;
     } finally {
       if (_indexingPaths.remove(filePath)) _notify();
     }

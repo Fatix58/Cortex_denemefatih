@@ -384,22 +384,7 @@ class VoiceService extends ChangeNotifier with WidgetsBindingObserver {
     final gen = _activeGeneration;
     if (gen == null) return;
 
-    // 1. Barge-in sampling: the remote mic stays open while the assistant
-    //    speaks, and level updates flow through here into the detector.
-    //    The microphone is never muted during playback; the detector's
-    //    gates (sustained amplitude + confident, non-echo transcript)
-    //    decide what counts as the user talking over the audio.
-    if (_state == VoiceState.speaking && _speechService.isRemoteActive) {
-      _bargeIn.onLevel(_speechService.soundLevel);
-      if (_bargeIn.shouldBargeIn) {
-        _interruptForBargeIn(gen);
-        return;
-      }
-    } else {
-      _bargeIn.onLevel(0.0);
-    }
-
-    // 2. Native-fallback auto-stop (speech_to_text stops itself after
+    // Native-fallback auto-stop (speech_to_text stops itself after
     //    silence): finalize the captured text if there is any, otherwise
     //    restart — the session continues, but a recognizer that keeps
     //    producing nothing must not tight-loop (bounded empty restarts).

@@ -288,10 +288,9 @@ class _ChatEmptyStateState extends State<ChatEmptyState>
                   title: l10n.featureCreateImageTitle,
                   iconColor:
                       AppColors.background.inverted.withValues(alpha: 0.2),
-                  // Disabled while the balance cannot cover the published
-                  // image cost (or the band is not full); re-enabled
-                  // reactively by the AnimatedBuilder above.
-                  isDisabled: !credits.canGenerate('image'),
+                  // Keep tappable so the handler can open Funds instead of
+                  // silently ignoring an insufficient balance.
+                  isDisabled: false,
                   onTap: () => _handleGeneration(context, 'image'),
                 ),
               ),
@@ -309,11 +308,9 @@ class _ChatEmptyStateState extends State<ChatEmptyState>
                   title: l10n.featureCreateVideoTitle,
                   iconColor:
                       AppColors.background.inverted.withValues(alpha: 0.2),
-                  // Ultra-only lane: a non-ultra user keeps the tappable
-                  // tier upsell; an ultra user with an unaffordable balance
-                  // gets the disabled affordance instead of arming a request
-                  // the server will refuse.
-                  isDisabled: isUltra && !credits.canGenerate('video'),
+                  // The handler routes non-Ultra and low-credit users to the
+                  // relevant plan/credits screen.
+                  isDisabled: false,
                   usePremiumStyle: !isUltra,
                   onTap: () => _handleGeneration(context, 'video'),
                 ),
@@ -336,9 +333,8 @@ class _ChatEmptyStateState extends State<ChatEmptyState>
                   title: l10n.featureCreateMusicTitle,
                   iconColor:
                       AppColors.background.inverted.withValues(alpha: 0.2),
-                  // Disabled while the balance cannot cover the published
-                  // speech cost (audio maps to the server's 'speech' lane).
-                  isDisabled: !credits.canGenerate('speech'),
+                  // Keep tappable to explain a credit shortfall in Funds.
+                  isDisabled: false,
                   onTap: () => _handleGeneration(context, 'music'),
                 ),
               ),

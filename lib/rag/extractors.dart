@@ -78,6 +78,7 @@ class DocTextExtractor {
   static const List<String> serverFallbackExtensions = [
     'doc',
     'xls',
+    'ppt',
     'odt',
     'ods',
     'odp',
@@ -105,7 +106,18 @@ class DocTextExtractor {
       }
 
       // 2. On-device binary formats.
-      if (extension == 'pdf') return await _extractPdf(path);
+      if (extension == 'pdf') {
+        String? extracted;
+        try {
+          extracted = await _extractPdf(path);
+        } catch (e) {
+          debugLog('DocTextExtractor: local pdf extraction failed: $e');
+        }
+        if (extracted != null && extracted.trim().isNotEmpty) return extracted;
+        // Scanned PDFs have no embedded text; let the authenticated server
+        // parser attempt OCR before marking document chat as failed.
+        return serverFallback == null ? null : await serverFallback(path);
+      }
       if (extension == 'docx') return await _extractDocx(file);
       if (extension == 'xlsx') return await _extractXlsx(file);
       if (extension == 'pptx') return await _extractPptx(file);

@@ -85,87 +85,28 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Future<void> _addTask() async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    DateTime? reminder;
-    final title = await showDialog<String>(
+    final draft = await showDialog<_TaskDraft>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, refresh) => AlertDialog(
-          title: Text(l10n.taskNewTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                autofocus: true,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(hintText: l10n.taskInputHint),
-                onSubmitted: (value) => Navigator.pop(dialogContext, value),
-              ),
-              TextButton.icon(
-                onPressed: () async {
-                  final now = DateTime.now();
-                  final date = await showDatePicker(
-                    context: dialogContext,
-                    initialDate: now,
-                    firstDate: now,
-                    lastDate: now.add(const Duration(days: 3650)),
-                  );
-                  if (date == null || !dialogContext.mounted) return;
-                  final time = await showTimePicker(
-                    context: dialogContext,
-                    initialTime: TimeOfDay.fromDateTime(now),
-                  );
-                  if (time == null) return;
-                  refresh(
-                    () => reminder = DateTime(
-                      date.year,
-                      date.month,
-                      date.day,
-                      time.hour,
-                      time.minute,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.notifications_outlined),
-                label: Text(
-                  reminder == null
-                      ? l10n.taskReminderAdd
-                      : '${MaterialLocalizations.of(context).formatShortDate(reminder!)} ${TimeOfDay.fromDateTime(reminder!).format(context)}',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, controller.text),
-              child: Text(l10n.add),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => const _TaskEditorDialog(),
     );
-    controller.dispose();
-    final cleanTitle = title?.trim() ?? '';
+    final cleanTitle = draft?.title.trim() ?? '';
     if (cleanTitle.isEmpty || !mounted) return;
+    final reminder = draft?.reminder;
 
     int? notificationId;
     var reminderScheduled = false;
     var reminderMayBeDelayed = false;
-    if (reminder != null && reminder!.isAfter(DateTime.now())) {
+    if (reminder != null && reminder.isAfter(DateTime.now())) {
       final notifications = context.read<ExtrovertNotificationService>();
       final allowed = await notifications.requestTaskReminderPermission();
+      if (!mounted) return;
       if (allowed) {
         notificationId = DateTime.now().microsecondsSinceEpoch & 0x7fffffff;
         try {
           await notifications.scheduleTaskReminder(
             notificationId: notificationId,
             title: cleanTitle,
-            scheduledAt: reminder!,
+            scheduledAt: reminder,
           );
           reminderScheduled = true;
           reminderMayBeDelayed = !await notifications
@@ -468,6 +409,98 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TaskDraft {
+  const _TaskDraft({required this.title, this.reminder});
+
+  final String title;
+  final DateTime? reminder;
+}
+
+/// Keeps the controller and picker context alive for the dialog route.
+class _TaskEditorDialog extends StatefulWidget {
+  const _TaskEditorDialog();
+
+  @override
+  State<_TaskEditorDialog> createState() => _TaskEditorDialogState();
+}
+
+class _TaskEditorDialogState extends State<_TaskEditorDialog> {
+  final _controller = TextEditingController();
+  DateTime? _reminder;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickReminder() async {
+    if (!mounted) return;
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 3650)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(now),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _reminder = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  void _submit() => Navigator.pop(
+    context,
+    _TaskDraft(title: _controller.text, reminder: _reminder),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final reminderLabel = _reminder == null
+        ? l10n.taskReminderAdd
+        : '${MaterialLocalizations.of(context).formatShortDate(_reminder!)} ${TimeOfDay.fromDateTime(_reminder!).format(context)}';
+    return AlertDialog(
+      title: Text(l10n.taskNewTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(hintText: l10n.taskInputHint),
+            onSubmitted: (_) => _submit(),
+          ),
+          TextButton.icon(
+            onPressed: _pickReminder,
+            icon: const Icon(Icons.notifications_outlined),
+            label: Text(reminderLabel),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.add)),
+      ],
     );
   }
 }

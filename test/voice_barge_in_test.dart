@@ -3,7 +3,7 @@
 // BargeInDetector invariants, all with an injected clock — no engines, no
 // real time:
 //   * every gate independently rejects (confidence, word count, echo,
-//     post-TTS window, amplitude sustain);
+//     post-TTS window);
 //   * all gates agreeing fire exactly once;
 //   * null confidence fails open (the native fallback reports no
 //     confidence and must not lose barge-in entirely).
@@ -27,9 +27,7 @@ void main() {
   }
 
   void sustainLoud({int ms = 350}) {
-    detector.onLevel(0.8);
     fakeNow = fakeNow.add(Duration(milliseconds: ms));
-    detector.onLevel(0.8);
   }
 
   test('all gates agreeing fire barge-in exactly once', () {
@@ -41,23 +39,16 @@ void main() {
     expect(detector.shouldBargeIn, false);
   });
 
-  test('amplitude below the floor never fires', () {
+  test('recognized non-echo speech interrupts without a level signal', () {
     detector = armedWith('the assistant is explaining');
-    detector.onUserTranscript(text: 'stop right there', confidence: 0.9);
-    detector.onLevel(0.2);
-    fakeNow = fakeNow.add(const Duration(seconds: 2));
-    detector.onLevel(0.2);
-    expect(detector.shouldBargeIn, false);
+    detector.onUserTranscript(text: 'please listen', confidence: 0.9);
+    expect(detector.shouldBargeIn, true);
   });
 
-  test('a loud blip shorter than the sustain window never fires', () {
+  test('an interruption cue can repeat a word used by the assistant', () {
     detector = armedWith('the assistant is explaining');
-    detector.onUserTranscript(text: 'stop right there', confidence: 0.9);
-    // Loud for only 100ms — a click, not a voice.
-    detector.onLevel(0.9);
-    fakeNow = fakeNow.add(const Duration(milliseconds: 100));
-    detector.onLevel(0.9);
-    expect(detector.shouldBargeIn, false);
+    detector.onUserTranscript(text: 'wait', confidence: 0.9);
+    expect(detector.shouldBargeIn, true);
   });
 
   test('low-confidence transcripts are not evidence', () {
@@ -108,6 +99,12 @@ void main() {
       expect(detector.shouldBargeIn, true);
     },
   );
+
+  test('Turkish interruption cue overrides a word-level echo match', () {
+    detector = armedWith('Dur, sana bunu açıklayayım');
+    detector.onUserTranscript(text: 'dur', confidence: 0.9);
+    expect(detector.shouldBargeIn, true);
+  });
 
   test('transcripts inside the 250ms post-TTS window are discarded', () {
     detector = armedWith('the assistant is explaining');
@@ -168,9 +165,7 @@ void main() {
 
     detector.reset();
     // Evidence gone: nothing fires until fresh evidence arrives.
-    detector.onLevel(0.9);
     fakeNow = fakeNow.add(const Duration(seconds: 1));
-    detector.onLevel(0.9);
     expect(detector.shouldBargeIn, false);
   });
 }

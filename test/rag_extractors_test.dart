@@ -69,6 +69,31 @@ void main() {
     expect(text, isNull);
   });
 
+  test('unreadable PDF is passed to server OCR/parser fallback', () async {
+    final file = File('${tempDir.path}/tarama.pdf')
+      ..writeAsStringSync('not a readable PDF');
+    var called = false;
+    final text = await extractor.extractText(
+      file.path,
+      serverFallback: (_) async {
+        called = true;
+        return 'OCR ile okunan metin';
+      },
+    );
+    expect(called, isTrue);
+    expect(text, 'OCR ile okunan metin');
+  });
+
+  test('legacy PowerPoint is routed to server parser', () async {
+    final file = File('${tempDir.path}/sunum.ppt')
+      ..writeAsStringSync('binary-ish');
+    final text = await extractor.extractText(
+      file.path,
+      serverFallback: (_) async => 'Sunum metni',
+    );
+    expect(text, 'Sunum metni');
+  });
+
   test('unknown extensions are read as plain text', () async {
     final file = File('${tempDir.path}/veri.xyz')
       ..writeAsStringSync('sadece metin içeriği');
