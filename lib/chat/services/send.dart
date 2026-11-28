@@ -1525,7 +1525,17 @@ class SendService {
     }
     for (var path in attachments) {
       final block = await Utils.processAttachment(path);
-      if (block == null) continue;
+      if (block == null) {
+        final isImage = await Utils.isImageAttachmentPath(path);
+        final extension = path.split('.').last.toLowerCase();
+        debugPrint(
+          '[Attachment] Serialization failed for .$extension (image=$isImage).',
+        );
+        throw ApiException(
+          isImage ? localizations.falErrorImageCorrupted : localizations.errorServer,
+          code: 'ATTACHMENT_PROCESSING_FAILED',
+        );
+      }
       // FIREWALL: inlined text files are untrusted as well.
       if (block["type"] == "text" &&
           block["text"] is String &&

@@ -25,10 +25,15 @@ class InputService {
   // --- Constants ---
   static const int _maxAttachmentCount = 9;
   static const int _maxFileSizeInBytes = 10 * 1024 * 1024; // 10 MB strict limit
+  static const List<String> _imageExtensions = [
+    'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'heic', 'heif',
+  ];
 
   // Supported extensions for the file picker.
   // We exclude executables (.exe, .apk, .bat) to prevent binary/malware uploads.
   static const List<String> _allowedExtensions = [
+    // Images can also be attached from the file browser, not only Gallery.
+    ..._imageExtensions,
     // Documents
     'pdf',
     'doc',
@@ -84,6 +89,7 @@ class InputService {
         }
 
         if (pickedFiles.isEmpty) return;
+        if (!context.mounted) return;
 
         for (final pickedFile in pickedFiles) {
           if (!_canAddMoreAttachments(inputProvider)) break;
@@ -92,7 +98,7 @@ class InputService {
           // ImagePicker already tells us which picker was used. Do not infer
           // this again from a temporary cache filename, which may have a
           // generic or missing extension on some Android/iOS devices.
-          await _validateAndAddAttachment(inputProvider, file,
+          await _validateAndAddAttachment(context, inputProvider, file,
               isImage: pickedImages);
         }
 
@@ -115,9 +121,10 @@ class InputService {
         }
 
         if (pickedFile == null) return;
+        if (!context.mounted) return;
 
         final File file = File(pickedFile.path);
-        await _validateAndAddAttachment(inputProvider, file,
+        await _validateAndAddAttachment(context, inputProvider, file,
             isImage: pickedImage);
         if (pickedImage && context.mounted) {
           _promoteSelectedSeriesForImage(context);
@@ -127,6 +134,7 @@ class InputService {
       onSelectionComplete();
     } catch (e) {
       debugPrint("Error picking photo/video: $e");
+      if (context.mounted) _showAttachmentFailure(context);
     }
   }
 
@@ -155,6 +163,7 @@ class InputService {
       );
 
       if (result == null || result.files.isEmpty) return;
+      if (!context.mounted) return;
 
       // 3. Process each selected file
       for (final platformFile in result.files) {
@@ -163,13 +172,14 @@ class InputService {
 
         final File file = File(platformFile.path!);
         final String pathLower = file.path.toLowerCase();
-        final bool isImage = ['.png', '.jpg', '.jpeg', '.webp', '.gif',
-            '.bmp', '.heic', '.heif']
-            .any((ext) => pathLower.endsWith(ext));
-        await _validateAndAddAttachment(inputProvider, file, isImage: isImage);
+        final bool isImage = _imageExtensions
+            .any((ext) => pathLower.endsWith('.$ext'));
+        await _validateAndAddAttachment(context, inputProvider, file,
+            isImage: isImage);
       }
     } catch (e) {
       debugPrint("Error picking file: $e");
+      if (context.mounted) _showAttachmentFailure(context);
     }
   }
 
@@ -184,7 +194,8 @@ class InputService {
   }
 
   /// Validates file size and adds it to the provider if safe.
-  Future<void> _validateAndAddAttachment(InputProvider inputProvider, File file,
+  Future<void> _validateAndAddAttachment(
+      BuildContext context, InputProvider inputProvider, File file,
       {required bool isImage}) async {
     try {
       final int sizeInBytes = await file.length();
@@ -192,6 +203,12 @@ class InputService {
       if (sizeInBytes > _maxFileSizeInBytes) {
         debugPrint(
             "File rejected: Size (${sizeInBytes / 1024 / 1024} MB) exceeds limit.");
+        if (context.mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.ragFileTooBig)),
+          );
+        }
         return;
       }
 
@@ -207,7 +224,16 @@ class InputService {
       inputProvider.addAttachment(durableFile, isImage: isImage);
     } catch (e) {
       debugPrint("Error validating file: $e");
+      if (context.mounted) _showAttachmentFailure(context);
     }
+  }
+
+  void _showAttachmentFailure(BuildContext context) {
+    if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.errorServer)),
+    );
   }
 
   /// Copies a freshly picked file from the volatile picker cache into

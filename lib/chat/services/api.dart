@@ -888,7 +888,18 @@ class ApiService {
     }
     for (final path in attachmentPaths) {
       final contentBlock = await Utils.processAttachment(path);
-      if (contentBlock != null) userMessageContent.add(contentBlock);
+      if (contentBlock == null) {
+        final isImage = await Utils.isImageAttachmentPath(path);
+        final extension = path.split('.').last.toLowerCase();
+        debugPrint(
+          '[Attachment] Character request could not serialize .$extension (image=$isImage).',
+        );
+        throw ApiException(
+          isImage ? localizations.falErrorImageCorrupted : localizations.errorServer,
+          code: 'ATTACHMENT_PROCESSING_FAILED',
+        );
+      }
+      userMessageContent.add(contentBlock);
     }
     if (userMessageContent.isNotEmpty) {
       messages.add({"role": "user", "content": userMessageContent});
@@ -1233,7 +1244,18 @@ class ApiService {
     }
     for (final path in attachmentPaths) {
       final contentBlock = await Utils.processAttachment(path);
-      if (contentBlock != null) userMessageContent.add(contentBlock);
+      if (contentBlock == null) {
+        final isImage = await Utils.isImageAttachmentPath(path);
+        final extension = path.split('.').last.toLowerCase();
+        debugPrint(
+          '[Attachment] Request could not serialize .$extension (image=$isImage).',
+        );
+        throw ApiException(
+          isImage ? localizations.falErrorImageCorrupted : localizations.errorServer,
+          code: 'ATTACHMENT_PROCESSING_FAILED',
+        );
+      }
+      userMessageContent.add(contentBlock);
     }
 
     // Extract documents for tool processing (PDF, XLSX, etc.) BEFORE cleaning
